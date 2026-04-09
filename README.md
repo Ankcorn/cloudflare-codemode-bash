@@ -2,7 +2,9 @@
 
 A Claude Code skill for interacting with the entire Cloudflare API using bash + Node.js — no MCP server required.
 
-Mirrors the "codemode" approach from the official [cloudflare/mcp](https://github.com/cloudflare/mcp) server: search a local pre-processed OpenAPI spec to find the right endpoint, then execute a Node script against the live API.
+Inspired by the **codemode pattern** invented by [Matt Carey (@mattzcarey)](https://x.com/mattzcarey), who built the original [mattzcarey/cloudflare-mcp](https://github.com/mattzcarey/cloudflare-mcp) server that Cloudflare subsequently adopted as their official [cloudflare/mcp](https://github.com/cloudflare/mcp). The core insight: instead of exposing 2,500 API endpoints as individual MCP tools (~244k tokens), give the agent two tools — `search` and `execute` — and let it write JavaScript to call the API itself (~1k tokens).
+
+This skill takes that same approach but strips out the MCP server entirely. Since Claude Code already has bash access, you can just run Node directly.
 
 ## How it works
 

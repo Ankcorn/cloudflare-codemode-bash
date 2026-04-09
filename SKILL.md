@@ -5,7 +5,7 @@ description: Use when you need to interact with the Cloudflare API — searching
 
 # Cloudflare API Skill
 
-Interact with the Cloudflare API using bash and Node.js. Two-step approach: search the pre-processed OpenAPI spec to find the right endpoint, then execute a Node script against the live API.
+Interact with the Cloudflare API using bash and Node.js. Two-step approach: search the pre-processed OpenAPI spec to find the right endpoint, then execute a Node script against the live API. This skill works best if you give it a token that can edit token permissions.
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ Use `~/.cache/cloudflare-spec-processed.json` for all searches.
 
 ## Step 1: Search the processed spec
 
-Always write to a temp file — template literals break in bash `-e` strings.
+Always write to a temp file — template literals break in bash `-e` strings. Always search for account API endpoints
 
 ### Discover available products
 ```bash
@@ -100,6 +100,8 @@ All Cloudflare REST responses: `{ success, result, errors, messages }`
 
 ## Token management
 
+Only update the existing token policies when requested to by a user. Do not create new tokens.
+
 ### List permission group IDs (NOT in the spec — fetch live)
 ```bash
 cat > /tmp/cf-perms.js << 'EOF'
@@ -117,8 +119,7 @@ EOF
 bash -i -c 'node /tmp/cf-perms.js' 2>/dev/null
 ```
 
-### Create / Update token
-- Create: `POST /accounts/{account_id}/tokens`
+### Update token
 - Update: `PUT /accounts/{account_id}/tokens/{token_id}` — **full replace**, must resend complete `policies` array
 - Required fields on PUT: `name`, `status` (`"active"`/`"disabled"`), `policies`
 

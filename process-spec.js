@@ -16,7 +16,17 @@ const path = require('path');
 const RAW = path.join(process.env.HOME, '.cache/cloudflare-spec.json');
 const OUT = path.join(process.env.HOME, '.cache/cloudflare-spec-processed.json');
 
-const spec = JSON.parse(fs.readFileSync(RAW, 'utf-8'));
+let spec;
+try {
+  spec = JSON.parse(fs.readFileSync(RAW, 'utf-8'));
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    console.error(`Error: Raw spec not found at ${RAW}. Download it first:\n  curl -s -o ~/.cache/cloudflare-spec.json https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.json`);
+  } else {
+    console.error(`Error: Failed to read or parse raw spec at ${RAW}: ${err.message}`);
+  }
+  process.exit(1);
+}
 
 function extractProduct(p) {
   const m = p.match(/\/accounts\/\{[^}]+\}\/([^/]+)/) || p.match(/\/zones\/\{[^}]+\}\/([^/]+)/);
@@ -33,6 +43,10 @@ function resolveRefs(obj, seen = new Set()) {
     const parts = ref.replace('#/', '').split('/');
     let resolved = spec;
     for (const part of parts) resolved = resolved?.[part];
+    if (resolved === undefined) {
+      console.error(`Warning: Unresolvable $ref "${ref}" — returning null`);
+      return null;
+    }
     const result = resolveRefs(resolved, seen);
     seen.delete(ref);
     return result;
@@ -72,7 +86,12 @@ for (const p of Object.keys(paths)) {
 }
 const products = [...productCounts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
 
-fs.writeFileSync(OUT, JSON.stringify({ paths, products }, null, 0));
-const size = (fs.statSync(OUT).size / 1024 / 1024).toFixed(1);
-console.log(`Written to ${OUT} (${size} MB)`);
-console.log(`Top products: ${products.slice(0, 10).join(', ')}`);
+try {
+  fs.writeFileSync(OUT, JSON.stringify({ paths, products }, null, 0));
+  const size = (fs.statSync(OUT).size / 1024 / 1024).toFixed(1);
+  console.log(`Written to ${OUT} (${size} MB)`);
+  console.log(`Top products: ${products.slice(0, 10).join(', ')}`);
+} catch (err) {
+  console.error(`Error: Failed to write processed spec to ${OUT}: ${err.message}`);
+  process.exit(1);
+}
